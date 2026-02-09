@@ -47,5 +47,72 @@
  *   //      frequentContact: "Swiggy", allAbove100: false, hasLargeTransaction: true }
  */
 export function analyzeUPITransactions(transactions) {
-  // Your code here
+  if (!Array.isArray(transactions) || transactions.length === 0) return null;
+
+  const validTxns = transactions.filter(
+    (t) =>
+      t &&
+      (t.type === "credit" || t.type === "debit") &&
+      typeof t.amount === "number" &&
+      t.amount > 0,
+  );
+
+  if (validTxns.length === 0) return null;
+
+  const totalCredit = validTxns
+    .filter((t) => t.type === "credit")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalDebit = validTxns
+    .filter((t) => t.type === "debit")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const netBalance = totalCredit - totalDebit;
+
+  const transactionCount = validTxns.length;
+
+  const avgTransaction = Math.round(
+    validTxns.reduce((sum, t) => sum + t.amount, 0) / transactionCount,
+  );
+
+  let highestTransaction = validTxns[0];
+  for (let t of validTxns)
+    if (t.amount > highestTransaction.amount) highestTransaction = t;
+
+  const categoryBreakdown = validTxns.reduce((acc, t) => {
+    if (acc[t.category]) acc[t.category] += t.amount;
+    else acc[t.category] = t.amount;
+    return acc;
+  }, {});
+
+  const contactCount = validTxns.reduce((acc, t) => {
+    if (acc[t.to]) acc[t.to] += 1;
+    else acc[t.to] = 1;
+    return acc;
+  }, {});
+
+  let frequentContact = null;
+  let maxCount = 0;
+  for (let contact in contactCount) {
+    if (contactCount[contact] > maxCount) {
+      maxCount = contactCount[contact];
+      frequentContact = contact;
+    }
+  }
+
+  const allAbove100 = validTxns.every((t) => t.amount > 100);
+  const hasLargeTransaction = validTxns.some((t) => t.amount >= 5000);
+
+  return {
+    totalCredit,
+    totalDebit,
+    netBalance,
+    transactionCount,
+    avgTransaction,
+    highestTransaction,
+    categoryBreakdown,
+    frequentContact,
+    allAbove100,
+    hasLargeTransaction,
+  };
 }
